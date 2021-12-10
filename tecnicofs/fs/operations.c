@@ -25,7 +25,6 @@ static bool valid_pathname(char const *name) {
     return name != NULL && strlen(name) > 1 && name[0] == '/';
 }
 
-
 int tfs_lookup(char const *name) {
     if (!valid_pathname(name)) {
         return -1;
@@ -95,7 +94,6 @@ int tfs_open(char const *name, int flags) {
      * opened but it remains created */
 }
 
-
 int tfs_close(int fhandle) { return remove_from_open_file_table(fhandle); }
 
 ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
@@ -140,7 +138,6 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
     return (ssize_t)to_write;
 }
 
-
 ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     open_file_entry_t *file = get_open_file_entry(fhandle);
     if (file == NULL) {
@@ -177,4 +174,34 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     }
 
     return (ssize_t)to_read;
+}
+
+int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
+    FILE *fp;
+
+    tfs_open(source_path, TFS_O_APPEND);
+    int fhandle = tfs_lookup(source_path);
+
+    if (fhandle == -1)
+        return -1;
+
+    char buffer[DATA_BLOCKS];
+    int bytes_source = tfs_read(fhandle, buffer, DATA_BLOCKS);
+
+    if (bytes_source == -1)
+        return -1;
+
+    fp = fopen(dest_path, "w");
+
+    if (!fp)
+        return -1;
+
+    int bytes_dest = fwrite(buffer, 1, sizeof(buffer), fp);
+
+    if (bytes_dest == -1)
+        return -1;
+
+    fclose(fp);
+    tfs_close(fhandle);
+    return 0;
 }
