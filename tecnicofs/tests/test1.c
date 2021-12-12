@@ -6,7 +6,7 @@ int main() {
 
     char *str = "AAA!";
     char *path = "/f1";
-    char buffer[40];
+    char buffer[1024];
 
     assert(tfs_init() != -1);
 
@@ -31,6 +31,8 @@ int main() {
     assert(strcmp(buffer, str) == 0);
 
     assert(tfs_close(f) != -1);
+	
+	tfs_copy_to_external_fs(path,"test1.txt");
 
     printf("Successful test.\n");
 

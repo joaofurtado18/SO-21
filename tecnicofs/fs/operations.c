@@ -178,28 +178,44 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
 
 int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
     FILE *fp;
-
-    tfs_open(source_path, TFS_O_APPEND);
-    int fhandle = tfs_lookup(source_path);
-
-    if (fhandle == -1)
-        return -1;
-
-    char buffer[DATA_BLOCKS];
-    int bytes_source = tfs_read(fhandle, buffer, DATA_BLOCKS);
-
-    if (bytes_source == -1)
-        return -1;
-
+    ssize_t result;
+    size_t bytes_dest;
+    char* buffer;
     fp = fopen(dest_path, "w");
 
     if (!fp)
         return -1;
 
-    int bytes_dest = fwrite(buffer, 1, sizeof(buffer), fp);
+    int fhandle = tfs_open(source_path, 0);
 
-    if (bytes_dest == -1)
+    if (fhandle == -1)
         return -1;
+
+    do{
+        buffer = malloc(sizeof(char)*DATA_BLOCKS);
+        result = tfs_read(fhandle, buffer, DATA_BLOCKS-1);
+        printf("%ld",result);
+
+        /*ficheiro de um bloco*/
+        if (result < DATA_BLOCKS){
+            printf("%s", buffer);
+            bytes_dest = fwrite(buffer, 1, (size_t) result, fp);
+            if (bytes_dest == -1){
+                return -1;
+            }
+            free(buffer);
+            break;
+        }
+        fwrite(buffer,1,(size_t) result, fp);
+        /*verificações*/
+        free(buffer);
+
+
+    } while(result != -1);
+    // ssize_t bytes_source = tfs_read(fhandle, buffer, DATA_BLOCKS-1);
+
+    // if (bytes_source == -1)
+    //     return -1;
 
     fclose(fp);
     tfs_close(fhandle);
