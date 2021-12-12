@@ -1,3 +1,29 @@
-test
-test2
-tesasegsagit++++
+int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
+    FILE *fp;
+    fp = fopen(dest_path, "w");
+
+    if (!fp)
+        return -1;
+
+    int fhandle = tfs_open(source_path, 0);
+
+    if (fhandle == -1)
+        return -1;
+
+    char buffer[DATA_BLOCKS];
+    memset(buffer,'\0', (size_t) DATA_BLOCKS);
+    ssize_t bytes_source = tfs_read(fhandle, buffer, DATA_BLOCKS-1);
+
+    if (bytes_source == -1)
+        return -1;
+
+
+    size_t bytes_dest = fwrite(buffer, 1, sizeof(buffer), fp);
+
+    if (bytes_dest == -1)
+        return -1;
+
+    fclose(fp);
+    tfs_close(fhandle);
+    return 0;
+}

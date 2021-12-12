@@ -6,7 +6,7 @@ int main() {
 
     char *str = "AAA!";
     char *path = "/f1";
-    char buffer[40];
+    char buffer[1024];
 
     assert(tfs_init() != -1);
 
