@@ -141,6 +141,7 @@ int inode_create(inode_type n_type) {
  */
 int inode_delete(int inumber) {
     // simulate storage access delay (to i-node and freeinode_ts)
+    int i;
     insert_delay();
     insert_delay();
 
@@ -151,8 +152,10 @@ int inode_delete(int inumber) {
     freeinode_ts[inumber] = FREE;
 
     if (inode_table[inumber].i_size > 0) {
-        if (data_block_free(inode_table[inumber].i_data_block[0]) == -1) {
-            return -1;
+        for (i = 0; inode_table[inumber].i_data_block[i]; i++){
+            if (data_block_free(inode_table[inumber].i_data_block[i]) == -1) {
+                return -1;
+            }
         }
     }
 
