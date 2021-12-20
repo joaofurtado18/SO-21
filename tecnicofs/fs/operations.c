@@ -127,8 +127,6 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
     }
 
     for (i = 0; i < DATA_BLOCK_VECTOR; i++) {
-        printf("Current write: %ld\n", current_write);
-
         if (current_write <= 0)
             break;
 
@@ -182,7 +180,6 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     if (to_read > len) {
         to_read = len;
     }
-    printf("%ld\n", to_read);
     /*verificação do offset*/
     /*if (file->of_offset + to_read >= BLOCK_SIZE) {
         return -1;
@@ -192,7 +189,6 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     current_block = 0;
     current_read = (int)to_read;
     while (current_read > 0) {
-        printf("%d\n", current_read);
         void *block = data_block_get(inode->i_data_block[current_block]);
         if (block == NULL) {
             return -1;
@@ -200,7 +196,6 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
 
         /* Perform the actual read */
         memcpy(buffer, block + file->of_offset, (size_t)current_read);
-        printf("block + file->of_offset: %p\n", block + file->of_offset);
 
         /* The offset associated with the file handle is
          * incremented accordingly */
