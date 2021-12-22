@@ -20,7 +20,8 @@ typedef enum { T_FILE, T_DIRECTORY } inode_type;
 /*
  * I-node
  */
-#define DATA_BLOCK_VECTOR 10
+#define DATA_BLOCK_VECTOR 11
+#define LAST_BLOCK_SIZE 256
 
 typedef struct {
     inode_type i_node_type;
