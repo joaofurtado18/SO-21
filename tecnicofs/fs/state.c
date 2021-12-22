@@ -152,7 +152,7 @@ int inode_delete(int inumber) {
     freeinode_ts[inumber] = FREE;
 
     if (inode_table[inumber].i_size > 0) {
-        for (i = 0; inode_table[inumber].i_data_block[i]; i++){
+        for (i = 0; inode_table[inumber].i_data_block[i]; i++) {
             if (data_block_free(inode_table[inumber].i_data_block[i]) == -1) {
                 return -1;
             }
