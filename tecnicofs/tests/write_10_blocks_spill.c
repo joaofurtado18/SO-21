@@ -40,6 +40,9 @@ int main() {
 
     for (int i = 0; i < COUNT; i++) {
         assert(tfs_read(fd, output, SIZE) == SIZE);
+        printf("%d\n",i);
+        puts(input);
+        puts(output);
         assert (memcmp(input, output, SIZE) == 0);
     }
 
