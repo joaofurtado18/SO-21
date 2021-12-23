@@ -99,9 +99,9 @@ int tfs_close(int fhandle) { return remove_from_open_file_table(fhandle); }
 
 ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
     int blocks_to_alloc, i, j;
+    int *last_block;
     size_t current_write = to_write;
     open_file_entry_t *file = get_open_file_entry(fhandle);
-    int *last_block;
 
     if (file == NULL) {
         return -1;
@@ -129,12 +129,16 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
             for (i = 0; i < blocks_to_alloc; i++) {
                 if (i < 10) {
                     inode->i_data_block[i] = data_block_alloc();
-                } else {
+                }
+
+                else {
                     inode->i_data_block[i] = data_block_alloc();
                     last_block = data_block_get(inode->i_data_block[i]);
+
                     if (!last_block) {
                         return -1;
                     }
+                    
                     for (j = 1; j < blocks_to_alloc - 10; j++) {
                         last_block[j] = data_block_alloc();
                     }
@@ -155,10 +159,10 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         if (i < 10)
             block = data_block_get(inode->i_data_block[i]);
         else {
-            last_block =
-                data_block_get(inode->i_data_block[DATA_BLOCK_VECTOR - 1]);
+            last_block = data_block_get(inode->i_data_block[DATA_BLOCK_VECTOR - 1]);
             block = &last_block[j];
         }
+        
         if (block == NULL) {
             return -1;
         }
@@ -167,19 +171,20 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
 
         /* The offset associated with the file handle is
          * incremented accordingly */
-        if (current_write > 1024) {
-            memcpy(block + file->of_offset, buffer + offset, BLOCK_SIZE);
-            file->of_offset += BLOCK_SIZE;
-            offset += BLOCK_SIZE;
-        } else {
-            memcpy(block + file->of_offset, buffer + offset, current_write);
-            file->of_offset += current_write;
-            offset += (int)current_write;
-        }
+        size_t number_of_bytes;
+        if (current_write > 1024)
+            number_of_bytes = BLOCK_SIZE;
+        else
+            number_of_bytes = current_write;
+        
+        memcpy(block + file->of_offset, buffer + offset, number_of_bytes);
+        file->of_offset += number_of_bytes;
+        offset += (int)number_of_bytes;
 
         if (file->of_offset > inode->i_size) {
             inode->i_size = file->of_offset;
         }
+        
         current_write -= DATA_BLOCKS;
     }
 
@@ -190,7 +195,7 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     open_file_entry_t *file = get_open_file_entry(fhandle);
     int current_block, current_read;
     int *last_block;
-    /*size_t to_read;*/
+
     if (file == NULL) {
         return -1;
     }
@@ -211,21 +216,22 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
         return -1;
     }*/
 
-    /*int blocks_to_read = (int) to_read/DATA_BLOCKS + 1;*/
     current_block = (int)file->of_offset / BLOCK_SIZE;
     current_read = (int)to_read;
     int offset = (int)file->of_offset - BLOCK_SIZE * current_block;
     int j;
+
     while (current_read > 0) {
         void *block;
         j = current_block - 10;
+
         if (current_block < 10)
             block = data_block_get(inode->i_data_block[current_block]);
         else {
-            last_block =
-                data_block_get(inode->i_data_block[DATA_BLOCK_VECTOR - 1]);
+            last_block = data_block_get(inode->i_data_block[DATA_BLOCK_VECTOR - 1]);
             block = &last_block[j];
         }
+
         if (block == NULL) {
             return -1;
         }
@@ -234,16 +240,15 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
 
         /* The offset associated with the file handle is
          * incremented accordingly */
-        if (current_read > 1024) {
-            memcpy(buffer + offset, block + file->of_offset, BLOCK_SIZE);
-            file->of_offset += BLOCK_SIZE;
-            offset += BLOCK_SIZE;
-        } else {
-            memcpy(buffer + offset, block + file->of_offset,
-                   (size_t)current_read);
-            file->of_offset += (size_t)current_read;
-            offset += current_read;
-        }
+        size_t number_of_bytes;
+        if (current_read > 1024)
+            number_of_bytes = BLOCK_SIZE;
+        else
+            number_of_bytes = (size_t)current_read;
+        
+        memcpy(buffer + offset, block + file->of_offset, number_of_bytes);
+        file->of_offset += number_of_bytes;
+        offset += (int)number_of_bytes;
 
         current_read -= DATA_BLOCKS;
         current_block++;
@@ -256,7 +261,6 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
     FILE *fp;
     ssize_t result;
     char *buffer;
-    int offset = 0;
     fp = fopen(dest_path, "w");
 
     if (!fp)
@@ -270,10 +274,11 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
     do {
         buffer = malloc(sizeof(char) * DATA_BLOCKS);
         result = tfs_read(fhandle, buffer, DATA_BLOCKS);
+
         if (result == -1)
             return -1;
+
         fwrite(buffer, 1, (size_t)result, fp);
-        offset += (int)result;
         free(buffer);
 
     } while (result >= BLOCK_SIZE);
