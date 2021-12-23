@@ -54,11 +54,17 @@ int tfs_open(char const *name, int flags) {
         }
 
         /* Trucate (if requested) */
-        /*TODO*/
         if (flags & TFS_O_TRUNC) {
             if (inode->i_size > 0) {
-                if (data_block_free(inode->i_data_block[0]) == -1) {
-                    return -1;
+                for(int i = 0; i <= 10; i++){
+                    if (i < 10)
+                        data_block_free(inode->i_data_block[i]);
+                    else{
+                        for(int* last_block = data_block_get(inode->i_data_block[i]); last_block; last_block += DATA_BLOCKS){
+                            data_block_free(*last_block);
+                        }
+                        break;
+                    }
                 }
                 inode->i_size = 0;
             }

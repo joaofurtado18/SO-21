@@ -45,6 +45,8 @@ int main() {
 
     assert(tfs_close(fd) != -1);
 
+    tfs_copy_to_external_fs(path, "writetest.txt");
+
 
     printf("Sucessful test\n");
 

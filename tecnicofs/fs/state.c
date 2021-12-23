@@ -153,9 +153,18 @@ int inode_delete(int inumber) {
 
     if (inode_table[inumber].i_size > 0) {
         for (i = 0; inode_table[inumber].i_data_block[i]; i++) {
+            if (i == 10){
+                for(int* last_block = data_block_get(inode_table[inumber].i_data_block[i]);
+                     last_block; last_block += DATA_BLOCKS){
+                    if (data_block_free(*last_block) == -1)
+                        return -1;
+                }
+                break;
+            }
             if (data_block_free(inode_table[inumber].i_data_block[i]) == -1) {
                 return -1;
             }
+
         }
     }
 
