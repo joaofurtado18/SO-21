@@ -31,7 +31,10 @@ int main() {
     int fd = tfs_open(path, TFS_O_CREAT);
     assert(fd != -1);
     for (int i = 0; i < COUNT; i++) {
+        puts(".................");
         assert(tfs_write(fd, input, SIZE) == SIZE);
+        puts(".................");
+        puts("");
     }
     assert(tfs_close(fd) != -1);
 
