@@ -40,15 +40,12 @@ int main() {
 
     for (int i = 0; i < COUNT; i++) {
         assert(tfs_read(fd, output, SIZE) == SIZE);
-        printf("%d\n",i);
-        puts(input);
-        puts(output);
         assert (memcmp(input, output, SIZE) == 0);
     }
 
-    assert(tfs_close(fd) != -1);
+    tfs_copy_to_external_fs(path, "spill.txt");
 
-    tfs_copy_to_external_fs(path, "writetest.txt");
+    assert(tfs_close(fd) != -1);
 
 
     printf("Sucessful test\n");

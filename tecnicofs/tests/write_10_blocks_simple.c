@@ -37,11 +37,8 @@ int main() {
     fd = tfs_open(path, 0);
     assert(fd != -1 );
 
-    ssize_t read;
     for (int i = 0; i < COUNT; i++) {
-        read = tfs_read(fd, output, SIZE);
-        // printf("teste %ld\n", read);
-        assert(read == SIZE);
+        assert(tfs_read(fd, output, SIZE) == SIZE);
         assert (memcmp(input, output, SIZE) == 0);
     }
 
