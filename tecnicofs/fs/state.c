@@ -128,6 +128,8 @@ int inode_create(inode_type n_type) {
                 /* In case of a new file, simply sets its size to 0 */
                 inode_table[inumber].i_size = 0;
                 inode_table[inumber].i_data_block[0] = -1;
+                inode_table[inumber].i_reference_block = -1;
+                inode_table[inumber].allocated_blocks = 0;
             }
             return inumber;
         }
@@ -260,7 +262,6 @@ int find_in_dir(int inumber, char const *sub_name) {
             (strncmp(dir_entry[i].d_name, sub_name, MAX_FILE_NAME) == 0)) {
             return dir_entry[i].d_inumber;
         }
-
     return -1;
 }
 

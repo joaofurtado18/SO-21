@@ -149,6 +149,9 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
     if (to_write > 0) {
         int count = 0;
         int* reference_block = NULL;
+        /*puts("********");*/
+        printf("blocks_to_alloc: %d\nallocated: %d\n\n", blocks_to_alloc,(int) inode->allocated_blocks);
+        /*puts("********\n");*/
         for (i = inode->allocated_blocks; i < blocks_to_alloc + inode->allocated_blocks; i++) {
             /*allocate directly into the data block vector*/
             if (i < 10) {
@@ -157,6 +160,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
                     return -1;
             }
             else{
+                puts("else");
                 j = i - 10;
                 /*allocate reference block if it's not allocated yet*/
                 if (inode->i_reference_block == -1){
@@ -182,7 +186,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
             initial_write_block = inode->allocated_blocks;
         }
         else
-            initial_write_block = inode-> allocated_blocks;
+            initial_write_block = inode->allocated_blocks;
         inode->allocated_blocks += count;
     }
 
@@ -191,11 +195,16 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         puts("erro no initial write block");
     
     int* reference_block;
-    for (i = initial_write_block; i < blocks_to_alloc; i++) {
+    for (i = initial_write_block; i < inode->allocated_blocks; i++) {
         j = i - 10;
+        /*printf("initial block: %d\n",i);
+        printf("reference block: %d\n",j);
+        printf("allocated: %d\n\n", (int) inode->allocated_blocks);*/
 
-        if (current_write <= 0 || (i < 10 && !inode->i_data_block[i]))
+        if (current_write <= 0 || (i < 10 && !inode->i_data_block[i])){
+            puts("break");
             break;
+        }
 
         void *block;
         /*direct references*/
@@ -219,10 +228,12 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
             memcpy(block + file->of_offset, buffer + offset, BLOCK_SIZE);
             file->of_offset += BLOCK_SIZE;
             offset += BLOCK_SIZE;
+            current_write -= DATA_BLOCKS;
         } else {
             memcpy(block + file->of_offset, buffer + offset, current_write);
             file->of_offset += current_write;
             offset += (int)current_write;
+            current_write -= DATA_BLOCKS;
         }
 
         if (file->of_offset > inode->i_size) {
@@ -230,7 +241,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         }
         current_write -= DATA_BLOCKS;
     }
-
+    printf("isize: %d\n", (int) inode->i_size);
     return (ssize_t)to_write;
 }
 
@@ -260,19 +271,21 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     }*/
 
     /*int blocks_to_read = (int) to_read/DATA_BLOCKS + 1;*/
-    if (inode->i_size % BLOCK_SIZE)
-        current_block = (int) inode->i_size / BLOCK_SIZE;
-    else
-        current_block = (int) inode->i_size / BLOCK_SIZE + 1;
+    /*if (inode->i_size % BLOCK_SIZE)*/
+        current_block = (int) file->of_offset / BLOCK_SIZE;
+    /*else
+        current_block = (int) file->of_offset / BLOCK_SIZE + 1;*/
     
     current_read = (int)to_read;
     int offset = (int)file->of_offset - BLOCK_SIZE * current_block;
     int j;
+    /*printf("current block %d\n", current_block);*/
     while (current_read > 0) {
         void *block;
         j = current_block - 10;
-        if (current_block < 10)
+        if (current_block < 10){
             block = data_block_get(inode->i_data_block[current_block]);
+        }
         else {
             reference_block = data_block_get(inode->i_reference_block);
             block = &reference_block[j];
@@ -325,7 +338,10 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
             return -1;
         fwrite(buffer, 1, (size_t)result, fp);
         offset += (int)result;
-        free(buffer);
+        if(buffer != NULL){
+            puts("free");
+            free(buffer);
+        }
 
     } while (result >= BLOCK_SIZE);
 
