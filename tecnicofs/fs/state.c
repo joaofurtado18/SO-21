@@ -112,6 +112,8 @@ int inode_create(inode_type n_type) {
 
                 inode_table[inumber].i_size = BLOCK_SIZE;
                 inode_table[inumber].i_data_block[0] = b;
+                inode_table[inumber].i_reference_block = -1;
+                inode_table[inumber].allocated_blocks = 0;
 
                 dir_entry_t *dir_entry = (dir_entry_t *)data_block_get(b);
                 if (dir_entry == NULL) {

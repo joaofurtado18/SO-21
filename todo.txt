@@ -1,0 +1,29 @@
+truncate
+delete
+write
+read
+
+
+
+
+
+
+
+if (inode->i_size == 0) {
+    /* If empty file, allocate new block */
+    for (i = 0; i < blocks_to_alloc; i++) {
+        if (i < 10) {
+            inode->i_data_block[i] = data_block_alloc();
+        } else {
+            inode->i_data_block[i] = data_block_alloc();
+            last_block = data_block_get(inode->i_data_block[i]);
+            if (!last_block) {
+                return -1;
+            }
+            for (j = 1; j < blocks_to_alloc - 10; j++) {
+                last_block[j] = data_block_alloc();
+            }
+            break;
+        }
+    }
+}
