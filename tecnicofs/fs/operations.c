@@ -119,8 +119,8 @@ int calculate_blocks(int to_write, int i_size) {
 }
 
 ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
-    int blocks_to_alloc, i, j, initial_write_block = -1;
-    size_t current_write = to_write;
+    int i, j;
+    int current_write = (int)to_write;
     open_file_entry_t *file = get_open_file_entry(fhandle);
 
     if (file == NULL) {
@@ -138,33 +138,34 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         to_write = BLOCK_SIZE - file->of_offset;
     }*/
 
-    blocks_to_alloc = calculate_blocks((int)to_write, (int)inode->i_size);
+    /*blocks_to_alloc = calculate_blocks((int)to_write, (int)inode->i_size);
     if (blocks_to_alloc + inode->allocated_blocks >
         DATA_BLOCK_VECTOR + BLOCK_SIZE / sizeof(int)) {
         return -1;
-    }
+    } */
 
-    int remaining_block_bytes = 0;
-    if (inode->i_size % BLOCK_SIZE != 0)
-        remaining_block_bytes =
-            DATA_BLOCKS - ((int)inode->i_size % DATA_BLOCKS);
+    if (inode->i_size % BLOCK_SIZE == 0)
+        i = inode->allocated_blocks;
+    else
+        i = inode->allocated_blocks - 1;
 
-    if (to_write > 0) {
-        int count = 0;
-        int *reference_block = NULL;
-        /*puts("********");*/
-        printf("blocks_to_alloc: %d\nallocated: %d\n\n", blocks_to_alloc,
-               (int)inode->allocated_blocks);
-        /*puts("********\n");*/
-        for (i = inode->allocated_blocks;
-             i < blocks_to_alloc + inode->allocated_blocks; i++) {
-            /*allocate directly into the data block vector*/
+    int offset = 0;
+    int *reference_block;
+    if (current_write > 0) {
+        for (; current_write > 0; current_write -= BLOCK_SIZE) {
+
+            void *block;
+            /*direct references*/
             if (i < 10) {
                 inode->i_data_block[i] = data_block_alloc();
                 if (inode->i_data_block[i] == -1)
                     return -1;
-            } else {
-                puts("else");
+
+                inode->allocated_blocks++;
+                block = data_block_get(inode->i_data_block[i]);
+            }
+            /*indirect references*/
+            else {
                 j = i - 10;
                 /*allocate reference block if it's not allocated yet*/
                 if (inode->i_reference_block == -1) {
@@ -172,75 +173,43 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
                     if (inode->i_reference_block == -1)
                         return -1;
                 }
+                inode->allocated_blocks++;
                 /*get reference block*/
-                if (!reference_block) {
-                    reference_block = data_block_get(inode->i_reference_block);
-                }
+                reference_block = data_block_get(inode->i_reference_block);
+
                 /*references to blocks in the fs_data vector*/
                 reference_block[j] = data_block_alloc();
                 if (reference_block[j] == -1)
                     return -1;
+
+                block = &reference_block[j];
             }
-            count++;
+
+            if (block == NULL) {
+                return -1;
+            }
+
+            /* Perform the actual write */
+
+            /* The offset associated with the file handle is
+             * incremented accordingly */
+            puts("Aqui");
+            printf("current_write: %d\n", current_write);
+            size_t number_of_bytes;
+            if (current_write > 1024)
+                number_of_bytes = BLOCK_SIZE;
+            else
+                number_of_bytes = (size_t)current_write;
+
+            memcpy(block + file->of_offset, buffer + offset, number_of_bytes);
+            file->of_offset += number_of_bytes;
+            offset += (int)number_of_bytes;
+
+            if (file->of_offset > inode->i_size)
+                inode->i_size = file->of_offset;
+            i++;
         }
-        if (remaining_block_bytes > 0 && inode->allocated_blocks > 0)
-            initial_write_block = inode->allocated_blocks - 1;
-        else if (remaining_block_bytes > 0 && inode->allocated_blocks == 0) {
-            initial_write_block = inode->allocated_blocks;
-        } else
-            initial_write_block = inode->allocated_blocks;
-        inode->allocated_blocks += count;
     }
-
-    int offset = 0;
-    if (initial_write_block < 0)
-        puts("erro no initial write block");
-
-    int *reference_block;
-    for (i = initial_write_block; i < inode->allocated_blocks; i++) {
-        j = i - 10;
-        printf("initial block: %d\n", i);
-        printf("reference block: %d\n", j);
-        printf("allocated: %d\n\n", (int)inode->allocated_blocks);
-
-        if (current_write <= 0 || (i < 10 && !inode->i_data_block[i])) {
-            puts("break");
-            break;
-        }
-
-        void *block;
-        /*direct references*/
-        if (i < 10)
-            block = data_block_get(inode->i_data_block[i]);
-        /*indirect references*/
-        else {
-            reference_block = data_block_get(inode->i_reference_block);
-            block = &reference_block[j];
-        }
-        if (block == NULL) {
-            return -1;
-        }
-
-        /* Perform the actual write */
-
-        /* The offset associated with the file handle is
-         * incremented accordingly */
-        if (current_write > 1024) {
-            memcpy(block + file->of_offset, buffer + offset, BLOCK_SIZE);
-            file->of_offset += BLOCK_SIZE;
-            offset += BLOCK_SIZE;
-        } else {
-            memcpy(block + file->of_offset, buffer + offset, current_write);
-            file->of_offset += current_write;
-            offset += (int)current_write;
-        }
-
-        if (file->of_offset > inode->i_size) {
-            inode->i_size = file->of_offset;
-        }
-        current_write -= DATA_BLOCKS;
-    }
-    printf("isize: %d\n", (int)inode->i_size);
     return (ssize_t)to_write;
 }
 
@@ -337,7 +306,6 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
         fwrite(buffer, 1, (size_t)result, fp);
         offset += (int)result;
         if (buffer != NULL) {
-            puts("free");
             free(buffer);
         }
 

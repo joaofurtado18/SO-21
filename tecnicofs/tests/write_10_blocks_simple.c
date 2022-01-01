@@ -30,6 +30,7 @@ int main() {
     assert(fd != -1);
     for (int i = 0; i < COUNT; i++) {
         assert(tfs_write(fd, input, SIZE) == SIZE);
+        printf("i: %d\n", i);
     }
     assert(tfs_close(fd) != -1);
 
