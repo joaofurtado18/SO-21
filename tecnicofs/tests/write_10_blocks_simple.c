@@ -39,9 +39,9 @@ int main() {
     assert(fd != -1 );
 
     for (int i = 0; i < COUNT; i++) {
-        // printf("i: %d\n",i);
+        printf("i: %d\n",i);
         assert(tfs_read(fd, output, SIZE) == SIZE);
-        // printf("input: %s\noutput: %s\n", input, output);
+        /*printf("input: %s\noutput: %s\n", input, output);*/
         assert(memcmp(input, output, SIZE) == 0);
     }
 
