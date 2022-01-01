@@ -156,14 +156,16 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
             void *block;
             /*direct references*/
             if (i < 10) {
-                printf("if i: %d\n", i);
-                inode->i_data_block[i] = data_block_alloc();
+                printf("i no if: %d\n", i);
+                if (inode->i_data_block[i] < 1)
+                    inode->i_data_block[i] = data_block_alloc();
+                printf("inode->i_data_block: %d\n", inode->i_data_block[i]);
                 if (inode->i_data_block[i] == -1)
                     return -1;
 
                 allocated_blocks++;
                 block = data_block_get(inode->i_data_block[i]);
-                printf("write: bloco %d: %p\n",i, &block);
+                printf("write: bloco %d: %p\n", i, block);
             }
             /*indirect references*/
             else {
@@ -196,13 +198,16 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
              * incremented accordingly */
             // puts("Aqui");
             // printf("current_write: %d\n", current_write);
+            current_write -= (int)file->of_offset; // resto do bloco
             size_t number_of_bytes;
+
             if (current_write > 1024)
                 number_of_bytes = BLOCK_SIZE;
             else
                 number_of_bytes = (size_t)current_write;
 
-            memcpy(block + file->of_offset, buffer /*+ offset*/, number_of_bytes);
+            memcpy(block + file->of_offset, buffer /*+ offset*/,
+                   number_of_bytes);
             file->of_offset += number_of_bytes;
             offset += (int)number_of_bytes;
             // puts("buffer write");
@@ -211,6 +216,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
             if (file->of_offset > inode->i_size)
                 inode->i_size = file->of_offset;
             i++;
+            printf("i no fim: %d\n", i);
         }
         inode->allocated_blocks = allocated_blocks;
     }
@@ -256,11 +262,12 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     int read = 0;
     /*printf("current block %d\n", current_block);*/
     while (current_read > 0) {
-        printf("current block: %d\n",current_block);
+        printf("current block: %d\n", current_block);
         void *block;
         j = current_block - 10;
         if (current_block < 10) {
-            block = data_block_get(inode->i_data_block[current_block]);
+            block = data_block_get(inode->i_data_block[0]);
+            printf("read bloco + file of offset: %p\n", block);
         } else {
             reference_block = data_block_get(inode->i_reference_block);
             block = &reference_block[j];
@@ -282,18 +289,17 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
             puts("else");
             memcpy(buffer /*+ offset*/, block + file->of_offset,
                    (size_t)current_read);
-            printf("read bloco: %p\n", &block);
             file->of_offset += (size_t)current_read;
             offset += current_read;
             read += current_read;
         }
 
-        if (read % BLOCK_SIZE == 0){
+        if (read % BLOCK_SIZE == 0) {
             current_block++;
         };
         current_read -= DATA_BLOCKS;
     }
-    printf("offset final %d\n", (int) file->of_offset);
+    printf("offset final %d\n", (int)file->of_offset);
     printf("read %d\n", read);
 
     return (ssize_t)to_read;
