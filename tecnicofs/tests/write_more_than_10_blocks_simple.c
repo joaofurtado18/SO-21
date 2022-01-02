@@ -23,7 +23,7 @@ int main() {
     char input[SIZE]; 
     memset(input, 'A', SIZE);
 
-    char output [SIZE];
+    char output [SIZE*COUNT];
 
     assert(tfs_init() != -1);
 
@@ -40,10 +40,18 @@ int main() {
     assert(fd != -1 );
 
     for (int i = 0; i < COUNT; i++) {
-        // printf("i: %d\n", i);
+        printf("i: %d\n", i);
         assert(tfs_read(fd, output, SIZE) == SIZE);
+        puts("**************************************************************");
+        // puts(input);
+        // puts(output);
         assert (memcmp(input, output, SIZE) == 0);
+        /*if (i == 20){*/
+        /*}*/
     }
+
+    /*tfs_read(fd, output, SIZE*COUNT);
+    puts(output);*/
 
     assert(tfs_close(fd) != -1);
 

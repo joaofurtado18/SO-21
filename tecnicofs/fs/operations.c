@@ -152,7 +152,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
     if (current_write > 0) {
         for (; current_write > 0; current_write -= BLOCK_SIZE) {
             void *block;
-            // printf("bloco write: %d\n", i);
+            printf("bloco write: %d\n", i);
             /*direct references*/
             if (i < 10) {
                 if (file->of_offset % BLOCK_SIZE == 0) {
@@ -203,6 +203,8 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
                 number_of_bytes = (size_t)current_write;
 
             memcpy(block + file->of_offset, buffer + offset, number_of_bytes);
+            // puts("block");
+            // puts(block+file->of_offset);
             file->of_offset += number_of_bytes;
             offset += (int)number_of_bytes;
 
@@ -215,7 +217,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
 }
 
 ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
-    puts("inicio");
+    // puts("inicio");
     open_file_entry_t *file = get_open_file_entry(fhandle);
     int current_block, current_read;
     int *reference_block;
@@ -234,19 +236,19 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
         to_read = len;
     
     /*verificação do offset*/
-    /*if (file->of_offset + to_read >= BLOCK_SIZE) {
+    /*if (file->of_offset + to_read >= inode->i_size) {
         return -1;
     }*/
     
-    current_block = (int)file->of_offset / BLOCK_SIZE;
-    current_read = (int)to_read;
     int offset = 0/*(int)file->of_offset - BLOCK_SIZE * current_block*/;
+    // printf("offset antes do current block: %d\n", (int) file->of_offset);
+    current_block = (int) file->of_offset / BLOCK_SIZE;
+    current_read = (int)to_read;
     int j;
     while (current_read > 0) {
         void *block;
-        printf("read current_read: %d\n", (int)current_read);
-        printf("read current_block: %d\n", current_block);
-        puts("                  \n");
+        // printf("read current_read: %d\n", (int)current_read);
+        // printf("read current_block: %d\n", current_block);
         if (current_block < 10) {
             block = data_block_get(inode->i_data_block[current_block]);
             // printf("endereco bloco read: %p\n\n", block);
@@ -269,14 +271,29 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
         else
             number_of_bytes = (size_t)current_read;
 
-        memcpy(buffer + offset, block + offset, number_of_bytes);
-        // file->of_offset += number_of_bytes;
+        puts(block+file->of_offset);
+        memcpy(buffer + offset, block + file->of_offset, number_of_bytes);
+        // printf("offset %d\n", offset);
+        // printf("nobyes: %ld\n", number_of_bytes);
+        puts("");
+
+        puts(buffer+offset);
+        puts("");
+        printf("cmp: %d\n",memcmp(buffer+offset, block + file->of_offset, strlen(block+file->of_offset)));
+        printf("len buffer: %ld\n",strlen(buffer+offset));
+        printf("len file: %ld\n",strlen(block + file->of_offset));
+        printf("bloco: %d\n", current_block);
+        puts("");
+
+        puts("");
+        file->of_offset += number_of_bytes;
         offset += (int)number_of_bytes;
 
         current_read -= BLOCK_SIZE;
         current_block++;
     }
-
+    // printf("offset %ld\n", file->of_offset);
+    puts("                  \n");
     return (ssize_t)to_read;
 }
 
@@ -297,7 +314,6 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
     inode_t *inode = inode_get(file->of_inumber);
     if (inode == NULL)
         return -1;
-    int size = (int) inode->i_size;
 
 
     fp = fopen(dest_path, "w");
@@ -310,15 +326,16 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
         buffer = malloc(sizeof(char) * 256);
         result = tfs_read(fhandle, buffer, 256);
         printf("res: %ld\n", result);
+        puts(buffer);
         if (result == -1)
             return -1;
-        fwrite(buffer, 1, (size_t)result, fp);
+        fwrite(buffer, 1, sizeof(buffer), fp);
         offset += (int)result;
         if (buffer != NULL) {
             free(buffer);
         }
 
-    } while (offset < size);
+    } while (result >= 256);
 
     fclose(fp);
     tfs_close(fhandle);

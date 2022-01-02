@@ -27,3 +27,9 @@ if (inode->i_size == 0) {
         }
     }
 }
+
+
+
+
+
+por algum motivo quando precisamos de 10+ blocos ele só vai ate 5

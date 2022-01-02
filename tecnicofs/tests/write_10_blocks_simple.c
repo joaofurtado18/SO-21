@@ -18,8 +18,9 @@ int main() {
 
     /* Writing this buffer multiple times to a file stored on 1KB blocks will 
        always hit a single block (since 1KB is a multiple of SIZE=256) */
-    char input[SIZE]; 
-    memset(input, 'A', SIZE);
+    // char input[SIZE];
+    // memset(input, 'A', SIZE);
+    char* input = "TallR5FPGMGe74NGWjEiHepfiOZzUIsWvAIe74TSXUKHTLkpJUyIzJBvysiPdlT5b2YrtaXKKxgrarSBJ5IMBOIjWin2To2UO39KK8UFI1t5BWZZfVuRstr479NMxhUBPx8O3We16T5gCks5YMhKDHaOeiNpKD7SEasTxE9evG2NuG79tjEfS0kVY3f1ewWRprF4XB7qWcCoquZAwbAgc9yV0haYwUdzHiTlxtAWF6mx1wWVcVdJogpNbNorJDX";
 
     char output [SIZE];
 
@@ -41,7 +42,7 @@ int main() {
     for (int i = 0; i < COUNT; i++) {
         //printf("i: %d\n",i);
         assert(tfs_read(fd, output, SIZE) == SIZE);
-        /*printf("input: %s\noutput: %s\n", input, output);*/
+        printf("output: %s\n",output);
         assert(memcmp(input, output, SIZE) == 0);
     }
 
