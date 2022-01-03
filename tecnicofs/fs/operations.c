@@ -288,17 +288,17 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
 
 
     do {
-        buffer = malloc(sizeof(char) * 256);
-        result = tfs_read(fhandle, buffer, 256);
+        buffer = malloc(sizeof(char) * BLOCK_SIZE);
+        result = tfs_read(fhandle, buffer, BLOCK_SIZE);
         if (result == -1)
             return -1;
-        fwrite(buffer, 1, sizeof(buffer), fp);
+        fwrite(buffer, 1, (size_t)result, fp);
         offset += (int)result;
         if (buffer != NULL) {
             free(buffer);
         }
 
-    } while (result >= 256);
+    } while (result == BLOCK_SIZE);
 
     fclose(fp);
     tfs_close(fhandle);
