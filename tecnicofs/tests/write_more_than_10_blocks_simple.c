@@ -31,6 +31,7 @@ int main() {
     int fd = tfs_open(path, TFS_O_CREAT);
     assert(fd != -1);
     for (int i = 0; i < COUNT; i++) {
+        // puts("oi");
         assert(tfs_write(fd, input, SIZE) == SIZE);
     }
     assert(tfs_close(fd) != -1);
@@ -40,9 +41,9 @@ int main() {
     assert(fd != -1 );
 
     for (int i = 0; i < COUNT; i++) {
-        printf("i: %d\n", i);
+        // printf("i: %d\n", i);
         assert(tfs_read(fd, output, SIZE) == SIZE);
-        puts("**************************************************************");
+        // puts("**************************************************************");
         // puts(input);
         // puts(output);
         assert (memcmp(input, output, SIZE) == 0);

@@ -17,7 +17,6 @@ int main() {
     assert(f != -1);
 
     r = tfs_write(f, str, strlen(str));
-    //printf("%ld\n",r);
     assert(r == strlen(str));
 
     assert(tfs_close(f) != -1);
@@ -29,8 +28,6 @@ int main() {
     assert(r == strlen(str));
 
     buffer[r] = '\0';
-    // puts(buffer);
-    // puts(str);
     assert(strcmp(buffer, str) == 0);
 
     assert(tfs_close(f) != -1);
