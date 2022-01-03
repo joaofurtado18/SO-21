@@ -42,7 +42,7 @@ int main() {
     for (int i = 0; i < COUNT; i++) {
         //printf("i: %d\n",i);
         assert(tfs_read(fd, output, SIZE) == SIZE);
-        printf("output: %s\n",output);
+        // printf("output: %s\n",output);
         assert(memcmp(input, output, SIZE) == 0);
     }
 
