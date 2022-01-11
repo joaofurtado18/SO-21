@@ -29,6 +29,7 @@ typedef struct {
     int i_data_block[DATA_BLOCK_VECTOR];
     int i_reference_block;
     int allocated_blocks;
+    /* rwlock TRINCO*/
     /* in a real FS, more fields would exist here */
 } inode_t;
 

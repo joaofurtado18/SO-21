@@ -95,6 +95,7 @@ int inode_create(inode_type n_type) {
         }
 
         /* Finds first free entry in i-node table */
+        // PRINCIPIO DO TRINCO (MUTEX)
         if (freeinode_ts[inumber] == FREE) {
             /* Found a free entry, so takes it for the new i-node*/
             freeinode_ts[inumber] = TAKEN;
@@ -133,6 +134,7 @@ int inode_create(inode_type n_type) {
             }
             return inumber;
         }
+        // FIM DO TRINCO (MUTEX)
     }
     return -1;
 }
@@ -149,11 +151,13 @@ int inode_delete(int inumber) {
     insert_delay();
     insert_delay();
 
+    // PRINCIPIO DO TRINCO (MUTEX)
     if (!valid_inumber(inumber) || freeinode_ts[inumber] == FREE) {
         return -1;
     }
 
     freeinode_ts[inumber] = FREE;
+    // FIM DO TRINCO (MUTEX)
 
     if (inode_table[inumber].i_size > 0) {
         for (i = 0; inode_table[inumber].i_data_block[i]; i++) {
@@ -275,11 +279,13 @@ int data_block_alloc() {
             insert_delay(); // simulate storage access delay to free_blocks
         }
 
+        // PRINCIPIO DO TRINCO (MUTEX)
         if (free_blocks[i] == FREE) {
             free_blocks[i] = TAKEN;
             return i;
         }
     }
+    // FIM DO TRINCO (MUTEX)
     return -1;
 }
 
@@ -294,7 +300,9 @@ int data_block_free(int block_number) {
     }
 
     insert_delay(); // simulate storage access delay to free_blocks
+    // PRINCIPIO DO TRINCO (MUTEX)
     free_blocks[block_number] = FREE;
+    // FIM DO TRINCO (MUTEX) 
     return 0;
 }
 
@@ -319,6 +327,7 @@ void *data_block_get(int block_number) {
  * Returns: file handle if successful, -1 otherwise
  */
 int add_to_open_file_table(int inumber, size_t offset) {
+    // PRINCIPIO DO TRINCO (MUTEX)
     for (int i = 0; i < MAX_OPEN_FILES; i++) {
         if (free_open_file_entries[i] == FREE) {
             free_open_file_entries[i] = TAKEN;
@@ -327,6 +336,7 @@ int add_to_open_file_table(int inumber, size_t offset) {
             return i;
         }
     }
+    // FIM DO TRINCO (MUTEX)
     return -1;
 }
 
@@ -336,11 +346,13 @@ int add_to_open_file_table(int inumber, size_t offset) {
  * Returns 0 is success, -1 otherwise
  */
 int remove_from_open_file_table(int fhandle) {
+    // PRINCIPIO DO TRINCO (MUTEX)
     if (!valid_file_handle(fhandle) ||
         free_open_file_entries[fhandle] != TAKEN) {
         return -1;
     }
     free_open_file_entries[fhandle] = FREE;
+    // FIM DO TRINCO (MUTEX)
     return 0;
 }
 
@@ -353,5 +365,6 @@ open_file_entry_t *get_open_file_entry(int fhandle) {
     if (!valid_file_handle(fhandle)) {
         return NULL;
     }
+    // PRINCIPIO DO TRINCO (MUTEX)
     return &open_file_table[fhandle];
 }
