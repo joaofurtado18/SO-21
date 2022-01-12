@@ -125,7 +125,6 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
     /*if (to_write + file->of_offset > BLOCK_SIZE) {
         to_write = BLOCK_SIZE - file->of_offset;
     }*/
-
     if (inode->i_size % BLOCK_SIZE == 0)
         i = inode->allocated_blocks;
     else

@@ -33,6 +33,9 @@ static inline bool valid_block_number(int block_number) {
 static inline bool valid_file_handle(int file_handle) {
     return file_handle >= 0 && file_handle < MAX_OPEN_FILES;
 }
+/*trincos*/
+pthread_mutex_t mutex_1;
+
 
 /**
  * We need to defeat the optimizer for the insert_delay() function.
@@ -76,6 +79,8 @@ void state_init() {
     for (size_t i = 0; i < MAX_OPEN_FILES; i++) {
         free_open_file_entries[i] = FREE;
     }
+
+    pthread_mutex_init(&mutex_1, NULL);
 }
 
 void state_destroy() { /* nothing to do */
@@ -95,7 +100,7 @@ int inode_create(inode_type n_type) {
         }
 
         /* Finds first free entry in i-node table */
-        // PRINCIPIO DO TRINCO (MUTEX)
+        pthread_mutex_lock(&mutex_1);
         if (freeinode_ts[inumber] == FREE) {
             /* Found a free entry, so takes it for the new i-node*/
             freeinode_ts[inumber] = TAKEN;
@@ -115,6 +120,7 @@ int inode_create(inode_type n_type) {
                 inode_table[inumber].i_data_block[0] = b;
                 inode_table[inumber].i_reference_block = -1;
                 inode_table[inumber].allocated_blocks = 0;
+                pthread_mutex_init(&inode_table[inumber].lock, NULL);
 
                 dir_entry_t *dir_entry = (dir_entry_t *)data_block_get(b);
                 if (dir_entry == NULL) {
@@ -131,10 +137,11 @@ int inode_create(inode_type n_type) {
                 inode_table[inumber].i_data_block[0] = -1;
                 inode_table[inumber].i_reference_block = -1;
                 inode_table[inumber].allocated_blocks = 0;
+                pthread_mutex_init(&inode_table[inumber].lock, NULL);
             }
             return inumber;
         }
-        // FIM DO TRINCO (MUTEX)
+        pthread_mutex_unlock(&mutex_1);
     }
     return -1;
 }
@@ -151,14 +158,17 @@ int inode_delete(int inumber) {
     insert_delay();
     insert_delay();
 
-    // PRINCIPIO DO TRINCO (MUTEX)
+    /*trinco mutex*/
+    pthread_mutex_lock(&mutex_1);
     if (!valid_inumber(inumber) || freeinode_ts[inumber] == FREE) {
         return -1;
     }
 
     freeinode_ts[inumber] = FREE;
+    pthread_mutex_unlock(&mutex_1);
     // FIM DO TRINCO (MUTEX)
 
+    pthread_mutex_lock(&inode_table[inumber].lock);
     if (inode_table[inumber].i_size > 0) {
         for (i = 0; inode_table[inumber].i_data_block[i]; i++) {
             if (i == 10) {
@@ -175,9 +185,7 @@ int inode_delete(int inumber) {
             }
         }
     }
-
-    /* TODO: handle non-empty directories (either return error, or recursively
-     * delete children */
+    pthread_mutex_unlock(&inode_table[inumber].lock);
 
     return 0;
 }
@@ -211,6 +219,7 @@ int add_dir_entry(int inumber, int sub_inumber, char const *sub_name) {
     }
 
     insert_delay(); // simulate storage access delay to i-node with inumber
+    pthread_mutex_lock(&inode_table[inumber].lock);
     if (inode_table[inumber].i_node_type != T_DIRECTORY) {
         return -1;
     }
@@ -225,7 +234,7 @@ int add_dir_entry(int inumber, int sub_inumber, char const *sub_name) {
     if (dir_entry == NULL) {
         return -1;
     }
-
+    pthread_mutex_unlock(&inode_table[inumber].lock);
     /* Finds and fills the first empty entry */
     for (size_t i = 0; i < MAX_DIR_ENTRIES; i++) {
         if (dir_entry[i].d_inumber == -1) {
@@ -251,7 +260,6 @@ int find_in_dir(int inumber, char const *sub_name) {
         inode_table[inumber].i_node_type != T_DIRECTORY) {
         return -1;
     }
-
     /* Locates the block containing the directory's entries */
     dir_entry_t *dir_entry =
         (dir_entry_t *)data_block_get(inode_table[inumber].i_data_block[0]);
@@ -279,13 +287,15 @@ int data_block_alloc() {
             insert_delay(); // simulate storage access delay to free_blocks
         }
 
-        // PRINCIPIO DO TRINCO (MUTEX)
+        // INICIO DO TRINCO
+        pthread_mutex_unlock(&mutex_1);
         if (free_blocks[i] == FREE) {
             free_blocks[i] = TAKEN;
             return i;
         }
     }
     // FIM DO TRINCO (MUTEX)
+    pthread_mutex_unlock(&mutex_1);
     return -1;
 }
 
@@ -301,7 +311,9 @@ int data_block_free(int block_number) {
 
     insert_delay(); // simulate storage access delay to free_blocks
     // PRINCIPIO DO TRINCO (MUTEX)
+    pthread_mutex_lock(&mutex_1);
     free_blocks[block_number] = FREE;
+    pthread_mutex_unlock(&mutex_1);
     // FIM DO TRINCO (MUTEX) 
     return 0;
 }
@@ -317,6 +329,7 @@ void *data_block_get(int block_number) {
     }
 
     insert_delay(); // simulate storage access delay to block
+    pthread_mutex_lock(&mutex_1);
     return &fs_data[block_number * BLOCK_SIZE];
 }
 
@@ -328,6 +341,7 @@ void *data_block_get(int block_number) {
  */
 int add_to_open_file_table(int inumber, size_t offset) {
     // PRINCIPIO DO TRINCO (MUTEX)
+    pthread_mutex_lock(&mutex_1);
     for (int i = 0; i < MAX_OPEN_FILES; i++) {
         if (free_open_file_entries[i] == FREE) {
             free_open_file_entries[i] = TAKEN;
@@ -336,6 +350,7 @@ int add_to_open_file_table(int inumber, size_t offset) {
             return i;
         }
     }
+    pthread_mutex_unlock(&mutex_1);
     // FIM DO TRINCO (MUTEX)
     return -1;
 }
@@ -347,11 +362,13 @@ int add_to_open_file_table(int inumber, size_t offset) {
  */
 int remove_from_open_file_table(int fhandle) {
     // PRINCIPIO DO TRINCO (MUTEX)
+    pthread_mutex_lock(&mutex_1);
     if (!valid_file_handle(fhandle) ||
         free_open_file_entries[fhandle] != TAKEN) {
         return -1;
     }
     free_open_file_entries[fhandle] = FREE;
+    pthread_mutex_unlock(&mutex_1);
     // FIM DO TRINCO (MUTEX)
     return 0;
 }
@@ -365,6 +382,7 @@ open_file_entry_t *get_open_file_entry(int fhandle) {
     if (!valid_file_handle(fhandle)) {
         return NULL;
     }
-    // PRINCIPIO DO TRINCO (MUTEX)
+    // PRINCIPIO DO TRINCO (MUTEX)  
+    pthread_mutex_lock(&mutex_1);
     return &open_file_table[fhandle];
 }
