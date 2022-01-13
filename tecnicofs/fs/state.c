@@ -35,6 +35,7 @@ static inline bool valid_file_handle(int file_handle) {
 }
 /*trincos*/
 pthread_mutex_t mutex_1;
+pthread_mutex_t mutex_2;
 
 
 /**
@@ -81,6 +82,7 @@ void state_init() {
     }
 
     pthread_mutex_init(&mutex_1, NULL);
+    pthread_mutex_init(&mutex_2, NULL);
 }
 
 void state_destroy() { /* nothing to do */
@@ -110,6 +112,7 @@ int inode_create(inode_type n_type) {
             if (n_type == T_DIRECTORY) {
                 /* Initializes directory (filling its block with empty
                  * entries, labeled with inumber==-1) */
+                puts("antes do init");
                 int b = data_block_alloc();
                 if (b == -1) {
                     freeinode_ts[inumber] = FREE;
@@ -120,7 +123,8 @@ int inode_create(inode_type n_type) {
                 inode_table[inumber].i_data_block[0] = b;
                 inode_table[inumber].i_reference_block = -1;
                 inode_table[inumber].allocated_blocks = 0;
-                pthread_mutex_init(&inode_table[inumber].lock, NULL);
+                pthread_rwlock_init(&inode_table[inumber].lock, NULL);
+                puts("create");
 
                 dir_entry_t *dir_entry = (dir_entry_t *)data_block_get(b);
                 if (dir_entry == NULL) {
@@ -137,7 +141,7 @@ int inode_create(inode_type n_type) {
                 inode_table[inumber].i_data_block[0] = -1;
                 inode_table[inumber].i_reference_block = -1;
                 inode_table[inumber].allocated_blocks = 0;
-                pthread_mutex_init(&inode_table[inumber].lock, NULL);
+                pthread_rwlock_init(&inode_table[inumber].lock, NULL);
             }
             return inumber;
         }
@@ -168,7 +172,7 @@ int inode_delete(int inumber) {
     pthread_mutex_unlock(&mutex_1);
     // FIM DO TRINCO (MUTEX)
 
-    pthread_mutex_lock(&inode_table[inumber].lock);
+    pthread_rwlock_wrlock(&inode_table[inumber].lock);
     if (inode_table[inumber].i_size > 0) {
         for (i = 0; inode_table[inumber].i_data_block[i]; i++) {
             if (i == 10) {
@@ -185,7 +189,7 @@ int inode_delete(int inumber) {
             }
         }
     }
-    pthread_mutex_unlock(&inode_table[inumber].lock);
+    pthread_rwlock_unlock(&inode_table[inumber].lock);
 
     return 0;
 }
@@ -219,7 +223,7 @@ int add_dir_entry(int inumber, int sub_inumber, char const *sub_name) {
     }
 
     insert_delay(); // simulate storage access delay to i-node with inumber
-    pthread_mutex_lock(&inode_table[inumber].lock);
+    pthread_rwlock_wrlock(&inode_table[inumber].lock);
     if (inode_table[inumber].i_node_type != T_DIRECTORY) {
         return -1;
     }
@@ -227,6 +231,7 @@ int add_dir_entry(int inumber, int sub_inumber, char const *sub_name) {
     if (strlen(sub_name) == 0) {
         return -1;
     }
+    pthread_rwlock_unlock(&inode_table[inumber].lock);
 
     /* Locates the block containing the directory's entries */
     dir_entry_t *dir_entry =
@@ -234,7 +239,6 @@ int add_dir_entry(int inumber, int sub_inumber, char const *sub_name) {
     if (dir_entry == NULL) {
         return -1;
     }
-    pthread_mutex_unlock(&inode_table[inumber].lock);
     /* Finds and fills the first empty entry */
     for (size_t i = 0; i < MAX_DIR_ENTRIES; i++) {
         if (dir_entry[i].d_inumber == -1) {
@@ -274,6 +278,7 @@ int find_in_dir(int inumber, char const *sub_name) {
             (strncmp(dir_entry[i].d_name, sub_name, MAX_FILE_NAME) == 0)) {
             return dir_entry[i].d_inumber;
         }
+    puts("find in dir");
     return -1;
 }
 
@@ -282,20 +287,22 @@ int find_in_dir(int inumber, char const *sub_name) {
  * Returns: block index if successful, -1 otherwise
  */
 int data_block_alloc() {
+    pthread_mutex_lock(&mutex_2);
+    puts("passou");
     for (int i = 0; i < DATA_BLOCKS; i++) {
         if (i * (int)sizeof(allocation_state_t) % BLOCK_SIZE == 0) {
             insert_delay(); // simulate storage access delay to free_blocks
         }
 
         // INICIO DO TRINCO
-        pthread_mutex_unlock(&mutex_1);
+
         if (free_blocks[i] == FREE) {
             free_blocks[i] = TAKEN;
             return i;
         }
     }
     // FIM DO TRINCO (MUTEX)
-    pthread_mutex_unlock(&mutex_1);
+    pthread_mutex_unlock(&mutex_2);
     return -1;
 }
 
@@ -329,7 +336,6 @@ void *data_block_get(int block_number) {
     }
 
     insert_delay(); // simulate storage access delay to block
-    pthread_mutex_lock(&mutex_1);
     return &fs_data[block_number * BLOCK_SIZE];
 }
 
@@ -347,6 +353,7 @@ int add_to_open_file_table(int inumber, size_t offset) {
             free_open_file_entries[i] = TAKEN;
             open_file_table[i].of_inumber = inumber;
             open_file_table[i].of_offset = offset;
+            pthread_mutex_init(&open_file_table[i].lock, NULL);
             return i;
         }
     }
@@ -383,6 +390,5 @@ open_file_entry_t *get_open_file_entry(int fhandle) {
         return NULL;
     }
     // PRINCIPIO DO TRINCO (MUTEX)  
-    pthread_mutex_lock(&mutex_1);
     return &open_file_table[fhandle];
 }
