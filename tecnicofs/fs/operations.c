@@ -77,10 +77,10 @@ int tfs_open(char const *name, int flags) {
         /* The file doesn't exist; the flags specify that it should be created*/
         /* Create inode */
         inum = inode_create(T_FILE);
+        puts("open");
         if (inum == -1) {
             return -1;
         }
-        puts("open");
         /* Add entry in the root directory */
         if (add_dir_entry(ROOT_DIR_INUM, inum, name + 1) == -1) {
             inode_delete(inum);
