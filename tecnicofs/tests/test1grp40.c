@@ -12,25 +12,11 @@ typedef struct s_args{
     size_t len;
 } args;
 
-typedef struct openfile_args_s{
-    char path[10];
-    int flag;
-} openfile_args;
-
 void *write(void* ARGS){
     args *arg = (args*) ARGS;
-    printf("thread: fl: %d\nstr: %s\nlen: %ld\n", arg->filehandle, arg->string, arg->len);
     return (void*) tfs_write(arg->filehandle, arg->string, arg->len);
 }
-void *read(void* ARGS){
-    args *arg = (args*) ARGS;
-    return (void*) tfs_read(arg->filehandle, arg->string, arg->len);
-}
 
-/*void *open(void* ARGS){
-    openfile_args *arg = (openfile_args*) ARGS;
-    return (void*) tfs_open(arg->path, arg->flag);
-}*/
 
 int main(){
     char *path = "/f1";
@@ -62,6 +48,7 @@ int main(){
     assert(tfs_close(f) != -1);
 
     f = tfs_open(path, 0);
+    assert(f != -1);
 
     tfs_read(f, buffer, sizeof(buffer)-1);
     assert(strlen(buffer) == 5);
@@ -72,6 +59,7 @@ int main(){
     for(int i = 0; i< strlen(buffer)-1; i++){
         assert(buffer[i] == first_char);
     }
+    assert(buffer[4] == '2');
     puts("Successful Test!");
     return 0;
 }

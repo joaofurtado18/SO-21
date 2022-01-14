@@ -46,6 +46,9 @@ int main() {
 
     assert(*ret_val1 != *ret_val2);
 
+    assert(tfs_close(*ret_val1) != -1);
+    assert(tfs_close(*ret_val2) != -1);
+    
     free(ret_val1);
     free(ret_val2);
 
