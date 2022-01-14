@@ -5,14 +5,27 @@
 typedef struct s_args{
     int filehandle;
     char string[300];
-    size_t strlen;
+    size_t len;
 } args;
+
+typedef struct openfile_args_s{
+    char path[10];
+    int flag;
+} openfile_args;
 
 void *write(void* ARGS){
     args *arg = (args*) ARGS;
-    printf("thread: fl: %d\nstr: %s\nlen: %ld\n", arg->filehandle, arg->string, arg->strlen);
-    tfs_write(arg->filehandle, arg->string, arg->strlen);
-    return NULL;
+    printf("thread: fl: %d\nstr: %s\nlen: %ld\n", arg->filehandle, arg->string, arg->len);
+    return void* tfs_write(arg->filehandle, arg->string, arg->len);
+}
+void *read(void* ARGS){
+    args *arg = (args*) ARGS;
+    return (void*) tfs_read(arg->filehandle, arg->string, arg->len);
+}
+
+void *open(void* ARGS){
+    openfile_args *arg = (openfile_args*) ARGS;
+    return (void*) tfs_open(arg->path, arg->flag);
 }
 int main() {
 
@@ -21,25 +34,31 @@ int main() {
     char buffer[300];
     args arg;
     assert(tfs_init() != -1);
-    puts("testesgseges");
 
-    int f;
+    void* f;
     ssize_t r;
-    pthread_t thread;
-    puts("e");
-    f = tfs_open(path, TFS_O_CREAT);
-    puts("+++");
+    pthread_t thread, thread2;
+    openfile_args open_args;
+    open_args->path = "/f1";
+    open_args->flag = TFS_O_CREAT;
+    pthread_create(&thread, NULL, write, &open_args);
+    pthread_join(thread, &)
+    f = (int)
+    
+    /*f = tfs_open(path, TFS_O_CREAT);
     arg.filehandle = f;
     strcpy(arg.string, str);
-    arg.strlen = strlen(arg.string);
+    arg.len = strlen(arg.string);
     pthread_create(&thread, NULL, write, &arg);
+    pthread_create(&thread2, NULL, read, &arg);*/
 
-    f = tfs_close(f);
+
+    /*f = tfs_close(f);
 
     tfs_open(path, 0);
     r = tfs_read(f, buffer, sizeof(buffer) - 1);
 
-    buffer[r] = '\0';
+    buffer[r] = '\0';*/
 
 
     printf("Successful test.\n");
