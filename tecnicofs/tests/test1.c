@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <string.h>
 
-typedef struct s_args{
+/*typedef struct s_args{
     int filehandle;
     char string[300];
     size_t len;
@@ -16,18 +16,20 @@ typedef struct openfile_args_s{
 void *write(void* ARGS){
     args *arg = (args*) ARGS;
     printf("thread: fl: %d\nstr: %s\nlen: %ld\n", arg->filehandle, arg->string, arg->len);
-    return void* tfs_write(arg->filehandle, arg->string, arg->len);
+    return (void*) tfs_write(arg->filehandle, arg->string, arg->len);
 }
 void *read(void* ARGS){
     args *arg = (args*) ARGS;
     return (void*) tfs_read(arg->filehandle, arg->string, arg->len);
 }
-
-void *open(void* ARGS){
+*/
+/*void *open(void* ARGS){
     openfile_args *arg = (openfile_args*) ARGS;
     return (void*) tfs_open(arg->path, arg->flag);
-}
-int main() {
+}*/
+
+
+/*int main() {
 
     char *str = "6UPl5ldgtEBUGL2AAAAAAAAAHrjmDrpVwDcEb57s3hqCa4HW8zMPGSeZA4mjjqYTfU99hADCOJU7XhwgvkxPeEm4MoeomSUZTFjiuHYvKrtNVI5E6SACcx85IWbkqn118z2qtbeFHbx9f5YTHiq4uGNGj43Z33TP35ERTbNhu4kYMch9gRwmYUHjJ7FgPWwmPc3tA71hk5pCdULrzJcdlXitvreLNf2scKkHH5LwoAjpj0KNxVj4owJEWh0gklIPoRotyYOxBNz4weQMCaPYYr2qL8Lhrlo7v";
     char *path = "/f1";
@@ -44,7 +46,7 @@ int main() {
     pthread_create(&thread, NULL, write, &open_args);
     pthread_join(thread, &)
     f = (int)
-    
+    */
     /*f = tfs_open(path, TFS_O_CREAT);
     arg.filehandle = f;
     strcpy(arg.string, str);
@@ -61,10 +63,13 @@ int main() {
     buffer[r] = '\0';*/
 
 
-    printf("Successful test.\n");
+    /*printf("Successful test.\n");
 
     tfs_copy_to_external_fs(path, "test1.txt");
 
 
+    return 0;
+}*/
+int main(){
     return 0;
 }
