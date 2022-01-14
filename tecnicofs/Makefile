@@ -14,8 +14,12 @@ INCLUDES = $(addprefix -I, $(INCLUDE_DIRS))
 SOURCES  := $(wildcard */*.c)
 HEADERS  := $(wildcard */*.h)
 OBJECTS  := $(SOURCES:.c=.o)
+<<<<<<< HEAD
 TARGET_EXECS := tests/test1 tests/copy_to_external_simple tests/copy_to_external_errors tests/write_10_blocks_spill tests/write_10_blocks_simple tests/write_more_than_10_blocks_simple tests/Open
 
+=======
+TARGET_EXECS := tests/test1 tests/copy_to_external_simple tests/copy_to_external_errors tests/write_10_blocks_spill tests/write_10_blocks_simple tests/write_more_than_10_blocks_simple tests/test1grp40
+>>>>>>> 539f3c55c41c1829649fe2e78e13723af3f5d277
 # VPATH is a variable used by Makefile which finds *sources* and makes them available throughout the codebase
 # vpath %.h <DIR> tells make to look for header files in <DIR>
 vpath # clears VPATH
@@ -64,14 +68,18 @@ fmt: $(SOURCES) $(HEADERS)
 # Note the lack of a rule.
 # make uses a set of default rules, one of which compiles C binaries
 # the CC, LD, CFLAGS and LDFLAGS are used in this rule
-tests/test1: tests/test1.o fs/operations.o fs/state.o
+tests/test1grp40: tests/test1grp40.o fs/operations.o fs/state.o
 tests/copy_to_external_errors: tests/copy_to_external_errors.o fs/operations.o fs/state.o
 tests/copy_to_external_simple: tests/copy_to_external_simple.o fs/operations.o fs/state.o
 tests/write_10_blocks_spill: tests/write_10_blocks_spill.o fs/operations.o fs/state.o
 tests/write_10_blocks_simple: tests/write_10_blocks_simple.o fs/operations.o fs/state.o
 tests/write_more_than_10_blocks_simple: tests/write_more_than_10_blocks_simple.o fs/operations.o fs/state.o
+<<<<<<< HEAD
 tests/Open: tests/Open.o fs/operations.o fs/state.o
 
+=======
+tests/test1: tests/test1.o fs/operations.o fs/state.o
+>>>>>>> 539f3c55c41c1829649fe2e78e13723af3f5d277
 
 clean:
 	rm -f $(OBJECTS) $(TARGET_EXECS)

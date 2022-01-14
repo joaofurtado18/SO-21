@@ -1,0 +1,43 @@
+#include "fs/operations.h"
+#include <assert.h>
+#include <string.h>
+
+int main() {
+
+    /*char *str = "CGlMEA12Wtzhntwmnev7xz2TIbTgSoBIUPVlBQQQQ";*/
+    char *path = "/f1";
+    /*char buffer[18000];*/
+
+    assert(tfs_init() != -1);
+
+    int f, g;
+    /*ssize_t r;*/
+
+    f = tfs_open(path, TFS_O_CREAT);
+    g = tfs_open(path, TFS_O_CREAT);
+    printf("f: %d/ng: %d/n", f,g);
+    assert(f != -1);
+
+    /*r = tfs_write(f, str, strlen(str));
+    //printf("%ld\n",r);
+    assert(r == strlen(str));
+
+    assert(tfs_close(f) != -1);
+
+    f = tfs_open(path, 0);
+    assert(f != -1);
+
+    r = tfs_read(f, buffer, sizeof(buffer) - 1);
+    assert(r == strlen(str));
+
+    buffer[r] = '\0';
+    assert(strcmp(buffer, str) == 0);
+
+    assert(tfs_close(f) != -1);
+
+    printf("Successful test.\n");
+
+    tfs_copy_to_external_fs(path, "test1.txt");*/
+
+    return 0;
+}
