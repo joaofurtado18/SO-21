@@ -58,11 +58,27 @@ int tfs_open(char const *name, int flags) {
 
         /* Trucate (if requested) */
         if (flags & TFS_O_TRUNC) {
+            pthread_rwlock_wrlock(&inode->lock);
             if (inode->i_size > 0) {
-                for (int i = 0; i < 10; i++) {
-                    data_block_free(inode->i_data_block[i]);
+                for (int i = 0; inode->i_data_block[i]; i++) {
+                    if (i == 10) {
+                        for (int *last_block =
+                                data_block_get(inode->i_data_block[i]);
+                            last_block; last_block += DATA_BLOCKS) {
+                            if (data_block_free(*last_block) == -1) {
+                                pthread_rwlock_unlock(&inode->lock);
+                                return -1;
+                            }
+                        }
+                        break;
+                    }
+                    if (data_block_free(inode->i_data_block[i]) == -1) {
+                        pthread_rwlock_unlock(&inode->lock);
+                        return -1;
+                    }
                 }
                 inode->i_size = 0;
+                pthread_rwlock_unlock(&inode->lock);
             }
         }
         /* Determine initial offset */
@@ -295,16 +311,13 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
         return -1;
 
     open_file_entry_t *file = get_open_file_entry(fhandle);
-    pthread_mutex_lock(&file->lock);
     inode_t *inode = inode_get(file->of_inumber);
     if (inode == NULL)
         return -1;
-    pthread_rwlock_wrlock(&inode->lock);
     fp = fopen(dest_path, "w");
 
     if (!fp)
         return -1;
-
     do {
         buffer = malloc(sizeof(char) * BLOCK_SIZE);
         result = tfs_read(fhandle, buffer, BLOCK_SIZE);
@@ -315,8 +328,6 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
             free(buffer);
 
     } while (result == BLOCK_SIZE);
-    pthread_rwlock_unlock(&inode->lock);
-    pthread_mutex_unlock(&file->lock);
 
     fclose(fp);
     tfs_close(fhandle);

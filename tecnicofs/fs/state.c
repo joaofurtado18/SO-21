@@ -36,6 +36,7 @@ static inline bool valid_block_number(int block_number) {
 static inline bool valid_file_handle(int file_handle) {
     return file_handle >= 0 && file_handle < MAX_OPEN_FILES;
 }
+pthread_mutex_t dir_lock;
 
 /**
  * We need to defeat the optimizer for the insert_delay() function.
@@ -83,9 +84,20 @@ void state_init() {
     pthread_mutex_init(&free_blocks_lock, NULL);
     pthread_mutex_init(&free_file_entries_lock, NULL);
     pthread_mutex_init(&free_inode_lock, NULL);
+    pthread_mutex_init(&dir_lock, NULL);
 }
 
-void state_destroy() { /* nothing to do */
+void state_destroy() {
+    pthread_mutex_destroy(&free_blocks_lock);
+    pthread_mutex_destroy(&free_file_entries_lock);
+    pthread_mutex_destroy(&free_inode_lock);
+    pthread_mutex_destroy(&dir_lock);
+    for(size_t i = 0; i < MAX_OPEN_FILES; i++){
+        pthread_mutex_destroy(&open_file_table[i].lock);
+    }
+    for(size_t i = 0; i < INODE_TABLE_SIZE; i++){
+        pthread_rwlock_destroy(&inode_table[i].lock);
+    }
 }
 
 /*
@@ -167,8 +179,8 @@ int inode_delete(int inumber) {
 
     pthread_mutex_lock(&free_inode_lock);
     if (!valid_inumber(inumber) || freeinode_ts[inumber] == FREE) {
-        return -1;
         pthread_mutex_unlock(&free_inode_lock);
+        return -1;
     }
 
     freeinode_ts[inumber] = FREE;
@@ -247,15 +259,17 @@ int add_dir_entry(int inumber, int sub_inumber, char const *sub_name) {
         return -1;
     }
     /* Finds and fills the first empty entry */
+    pthread_mutex_lock(&dir_lock);
     for (size_t i = 0; i < MAX_DIR_ENTRIES; i++) {
         if (dir_entry[i].d_inumber == -1) {
             dir_entry[i].d_inumber = sub_inumber;
             strncpy(dir_entry[i].d_name, sub_name, MAX_FILE_NAME - 1);
             dir_entry[i].d_name[MAX_FILE_NAME - 1] = 0;
+            pthread_mutex_unlock(&dir_lock);
             return 0;
         }
     }
-
+    pthread_mutex_unlock(&dir_lock);
     return -1;
 }
 
@@ -280,12 +294,15 @@ int find_in_dir(int inumber, char const *sub_name) {
 
     /* Iterates over the directory entries looking for one that has the target
      * name */
+    pthread_mutex_lock(&dir_lock);
     for (int i = 0; i < MAX_DIR_ENTRIES; i++)
         if ((dir_entry[i].d_inumber != -1) &&
             (strncmp(dir_entry[i].d_name, sub_name, MAX_FILE_NAME) == 0)) {
+            pthread_mutex_unlock(&dir_lock);
             return dir_entry[i].d_inumber;
         }
     puts("find in dir");
+    pthread_mutex_unlock(&dir_lock);
     return -1;
 }
 
