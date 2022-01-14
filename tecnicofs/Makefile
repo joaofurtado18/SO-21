@@ -15,7 +15,7 @@ SOURCES  := $(wildcard */*.c)
 HEADERS  := $(wildcard */*.h)
 OBJECTS  := $(SOURCES:.c=.o)
 
-TARGET_EXECS := tests/test1 tests/copy_to_external_simple tests/copy_to_external_errors tests/write_10_blocks_spill tests/write_10_blocks_simple tests/write_more_than_10_blocks_simple tests/test1grp40 tests/Open
+TARGET_EXECS := tests/test1 tests/copy_to_external_simple tests/copy_to_external_errors tests/write_10_blocks_spill tests/write_10_blocks_simple tests/write_more_than_10_blocks_simple tests/test1grp40 tests/test2grp40 tests/test3grp40
 
 # VPATH is a variable used by Makefile which finds *sources* and makes them available throughout the codebase
 # vpath %.h <DIR> tells make to look for header files in <DIR>
@@ -72,7 +72,8 @@ tests/write_10_blocks_spill: tests/write_10_blocks_spill.o fs/operations.o fs/st
 tests/write_10_blocks_simple: tests/write_10_blocks_simple.o fs/operations.o fs/state.o
 tests/write_more_than_10_blocks_simple: tests/write_more_than_10_blocks_simple.o fs/operations.o fs/state.o
 tests/test1grp40: tests/test1grp40.o fs/operations.o fs/state.o
-tests/Open: tests/Open.o fs/operations.o fs/state.o
+tests/test2grp40: tests/test2grp40.o fs/operations.o fs/state.o
+tests/test3grp40: tests/test3grp40.o fs/operations.o fs/state.o
 
 
 

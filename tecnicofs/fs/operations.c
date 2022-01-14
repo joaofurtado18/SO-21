@@ -9,7 +9,6 @@ int tfs_init() {
     state_init();
 
     /* create root inode */
-    puts("inode create");
     int root = inode_create(T_DIRECTORY);
     if (root != ROOT_DIR_INUM) {
         return -1;
@@ -34,7 +33,6 @@ int tfs_lookup(char const *name) {
 
     // skip the initial '/' character
     name++;
-    puts("chega");
     return find_in_dir(ROOT_DIR_INUM, name);
 }
 
@@ -91,7 +89,6 @@ int tfs_open(char const *name, int flags) {
         /* The file doesn't exist; the flags specify that it should be created*/
         /* Create inode */
         inum = inode_create(T_FILE);
-        puts("open");
         if (inum == -1) {
             return -1;
         }

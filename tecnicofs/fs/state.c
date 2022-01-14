@@ -124,7 +124,6 @@ int inode_create(inode_type n_type) {
             if (n_type == T_DIRECTORY) {
                 /* Initializes directory (filling its block with empty
                  * entries, labeled with inumber==-1) */
-                puts("antes do init");
                 int b = data_block_alloc();
                 if (b == -1) {
                     freeinode_ts[inumber] = FREE;
@@ -137,7 +136,6 @@ int inode_create(inode_type n_type) {
                 inode_table[inumber].i_reference_block = -1;
                 inode_table[inumber].allocated_blocks = 0;
                 pthread_rwlock_init(&inode_table[inumber].lock, NULL);
-                puts("create");
 
                 dir_entry_t *dir_entry = (dir_entry_t *)data_block_get(b);
                 if (dir_entry == NULL) {
@@ -301,7 +299,6 @@ int find_in_dir(int inumber, char const *sub_name) {
             pthread_mutex_unlock(&dir_lock);
             return dir_entry[i].d_inumber;
         }
-    puts("find in dir");
     pthread_mutex_unlock(&dir_lock);
     return -1;
 }
@@ -312,7 +309,6 @@ int find_in_dir(int inumber, char const *sub_name) {
  */
 int data_block_alloc() {
     pthread_mutex_lock(&free_blocks_lock);
-    puts("passou");
     for (int i = 0; i < DATA_BLOCKS; i++) {
         if (i * (int)sizeof(allocation_state_t) % BLOCK_SIZE == 0) {
             insert_delay(); // simulate storage access delay to free_blocks
