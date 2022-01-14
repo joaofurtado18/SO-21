@@ -36,8 +36,6 @@ static inline bool valid_block_number(int block_number) {
 static inline bool valid_file_handle(int file_handle) {
     return file_handle >= 0 && file_handle < MAX_OPEN_FILES;
 }
-/*trincos*/
-pthread_mutex_t mutex_2;
 
 /**
  * We need to defeat the optimizer for the insert_delay() function.
@@ -167,7 +165,6 @@ int inode_delete(int inumber) {
     insert_delay();
     insert_delay();
 
-    /*trinco mutex*/
     pthread_mutex_lock(&free_inode_lock);
     if (!valid_inumber(inumber) || freeinode_ts[inumber] == FREE) {
         return -1;
@@ -176,7 +173,6 @@ int inode_delete(int inumber) {
 
     freeinode_ts[inumber] = FREE;
     pthread_mutex_unlock(&free_inode_lock);
-    // FIM DO TRINCO (MUTEX)
 
     pthread_rwlock_wrlock(&inode_table[inumber].lock);
     if (inode_table[inumber].i_size > 0) {
@@ -298,22 +294,21 @@ int find_in_dir(int inumber, char const *sub_name) {
  * Returns: block index if successful, -1 otherwise
  */
 int data_block_alloc() {
-    pthread_mutex_lock(&mutex_2);
+    pthread_mutex_lock(&free_blocks_lock);
     puts("passou");
     for (int i = 0; i < DATA_BLOCKS; i++) {
         if (i * (int)sizeof(allocation_state_t) % BLOCK_SIZE == 0) {
             insert_delay(); // simulate storage access delay to free_blocks
         }
 
-        // INICIO DO TRINCO
-
         if (free_blocks[i] == FREE) {
             free_blocks[i] = TAKEN;
+            pthread_mutex_unlock(&free_blocks_lock);
             return i;
         }
     }
-    // FIM DO TRINCO (MUTEX)
-    pthread_mutex_unlock(&mutex_2);
+
+    pthread_mutex_unlock(&free_blocks_lock);
     return -1;
 }
 
@@ -328,11 +323,9 @@ int data_block_free(int block_number) {
     }
 
     insert_delay(); // simulate storage access delay to free_blocks
-    // PRINCIPIO DO TRINCO (MUTEX)
     pthread_mutex_lock(&free_blocks_lock);
     free_blocks[block_number] = FREE;
     pthread_mutex_unlock(&free_blocks_lock);
-    // FIM DO TRINCO (MUTEX)
     return 0;
 }
 
@@ -364,7 +357,7 @@ int add_to_open_file_table(int inumber, size_t offset) {
             open_file_table[i].of_inumber = inumber;
             open_file_table[i].of_offset = offset;
             pthread_mutex_init(&open_file_table[i].lock, NULL);
-            pthread_mutex_lock(&free_file_entries_lock);
+            pthread_mutex_unlock(&free_file_entries_lock);
             return i;
         }
     }
@@ -398,6 +391,6 @@ open_file_entry_t *get_open_file_entry(int fhandle) {
     if (!valid_file_handle(fhandle)) {
         return NULL;
     }
-    // PRINCIPIO DO TRINCO (MUTEX)
+
     return &open_file_table[fhandle];
 }
